@@ -1,0 +1,9 @@
+
+node_modules
+jspm_packages
+
+swagger
+
+.serverless
+
+.webpack
