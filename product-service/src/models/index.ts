@@ -1,1 +1,1 @@
-export { Product } from "./product.interface";
+export { Product, ProductData } from "./product.interface";

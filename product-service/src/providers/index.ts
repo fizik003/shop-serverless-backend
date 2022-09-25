@@ -1,1 +1,1 @@
-export { productProvider } from "@/providers/product.provider";
+export { ProductProvider } from "@/providers/product.provider";

@@ -8,19 +8,44 @@ provider:
   stage: ${opt:stage, 'dev'}
   profile: js-cc4
   region: eu-central-1
+  environment:
+    PRODUCTS_TABLE_NAME: ${self:custom.productsTableName}
   iam:
-    role: arn:aws:iam::398158581759:role/BasicLambdaExecutionRole
+    role:
+      permissionsBoundary: 'arn:aws:iam::${aws:accountId}:policy/eo_role_boundary'
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:*'
+            - 's3:*'
+          Resource: '*'
 
 plugins:
   - serverless-auto-swagger
   - serverless-webpack
+  - serverless-dynamodb-local
+  - serverless-offline
 
 custom:
+  productsTableName: products-table-${self:provider.stage}-yury-barysevich1
   webpack:
     webpackConfig: 'webpack.config.js'
     includeModules: true
   autoswagger:
-    apiType: httpApi
+    apiType: 'http'
+  dynamodb:
+    stages:
+      - dev
+    start:
+      inMemory: true
+      migrate: true
+      seed: true
+    seed:
+      local:
+        sources:
+          - table: ${self:custom.productsTableName}
+            sources: [./offline/products.json]
+  
 
 functions:
   getProductsList:
@@ -37,3 +62,38 @@ functions:
           path: /products/{productId}
           method: GET
           cors: true
+  createProduct:
+    handler: handler.createProduct
+    events:
+      - http:
+          path: /products
+          method: post
+          cors: true
+
+resources:
+  Resources:
+    ProductsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.productsTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: count
+            AttributeType: N
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CountIndex
+            KeySchema:
+              - AttributeName: count
+                KeyType: HASH
+            Projection:
+              ProjectionType: 'ALL'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
