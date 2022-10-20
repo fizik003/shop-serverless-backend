@@ -1,0 +1,1 @@
+export { CreateProductRequest } from "./createProductRequest";
